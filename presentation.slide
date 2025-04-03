@@ -1,0 +1,110 @@
+# Structured Logging
+
+Valdimir Bukhtiychuk
+04.04.2025
+
+## What is Structured Logging?
+
+- Logs in a machine-readable format (e.g., JSON)
+- Key-Value pairs instead of plain text
+- Easily searchable & filterable
+- Used for debugging, monitoring, and analytics
+
+## Why is Structured Logging Better?
+
+- Searchability: Query logs based on specific fields
+- Consistency: Uniform structure for all logs
+- Better Debugging: Adds metadata like timestamps, request IDs
+- Integration: Works well with tools like Datadog
+
+## Example: Traditional vs. Structured Logging
+
+**Traditional:**
+
+```
+2024-04-03 12:30:45 ERROR: Payment failed for user 12345 due to insufficient funds.
+```
+
+**Structured Logging:**
+
+```json
+{
+  "timestamp": "2024-04-03T12:30:45Z",
+  "level": "error",
+  "message": "Payment failed",
+  "user_id": 12345,
+  "error_code": "INSUFFICIENT_FUNDS"
+}
+```
+
+## Introducing `slog`
+
+- `slog` stands for **structured logging**
+- Standard Go structured logging package
+- Introduced in Go 1.21 to provide a unified logging solution
+- Supports JSON, text, and custom formats
+- Efficient & flexible
+
+## JSON Logging with `slog`
+
+- `slog` natively supports JSON formatting
+- Recommended for log aggregation and structured logging
+
+```go
+logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+logger = logger.With(slog.Int("order_id", 1234))
+logger.Info("Order processed", slog.Float64("amount", 99.99))
+```
+
+Produces JSON logs like:
+
+```json
+{
+  "time": "2024-04-03T12:31:00Z",
+  "level": "info",
+  "msg": "Order processed",
+  "order_id": 1234,
+  "amount": 99.99
+}
+```
+
+## Introducing `clog`
+
+It is an inhouse convinience library for `slog`. 
+
+It does:
+- Inject/retrieve `slog.Logger` into/from context
+- Allows passing logger throughout the request lifecycle
+- Utility functions to integrate with DataDog
+- Utility functions to provide stacktraces
+
+## Top-Down + Bottom-Up Logging
+
+**Top-Down Approach:**
+- Accumulate context from the top of the execution flow (e.g., incoming HTTP request or initial function call).
+- Propagate this context through the execution flow, passing it along as the request travels downstream.
+- Log at the bottom of the execution flow (e.g., deeper function calls or error handlers).
+
+**Bottom-Up Approach:**
+- Applicable to error-paths
+- Accumulate context from the bottom of the execution stack using error-wrapping (error themselves structured if needed).
+- Log at the top of the stack (e.g., at the entry point or at the top of the request handling).
+
+## Local Development Benefits
+
+- JSON logs work well with CLI tools for quick debugging
+- **`jq`**: Format and filter JSON logs easily
+  - Example: `cat logs.json | jq '.message'` (select `message` field)
+- **`grep`**: Quickly find relevant logs
+  - Example: `grep 'error' logs.json`
+- **Readability**: Pretty-print JSON logs with `jq .`
+
+## Live Demo
+
+- Running `slog` in a simple Go application
+- Demonstrating JSON logs in action
+- Introducing `clog`
+
+## Q&A
+
+- Questions?
